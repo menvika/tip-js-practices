@@ -4,47 +4,89 @@
 // console.log(), prompt(), document и чтение внешнего состояния здесь не нужны.
 
 export function createTask(id, title, priority = "medium") {
-  // TODO: проверить поля и вернуть результат создания задачи.
+  const allowedPriorities = ["low", "medium", "high"];
+
+  if (typeof title !== "string" || title.trim().length === 0) {
+    return { ok: false, error: "title должен быть непустой строкой" };
+  }
+
+  if (Number.isSafeInteger(id) === false || id <= 0) {
+    return { ok: false, error: "id должен быть положительным целым числом" };
+  }
+
+  if (title.trim().length > 100) {
+    return { ok: false, error: "длина title должна быть не больше 100" };
+  }
+
+  if (!allowedPriorities.includes(priority)) {
+    return { ok: false, error: "priority должен быть low, medium или high" };
+  }
+
+  return {
+    ok: true,
+    task: {
+      id: id,
+      title: title.trim(),
+      completed: false,
+      priority: priority
+    }
+  };
   throw new Error("Не реализовано: createTask");
 }
 
 export function findTaskById(tasks, id) {
-  // TODO: найти задачу с помощью find(); отсутствие результата — undefined.
+  return tasks.find((task) => task.id === id); 
   throw new Error("Не реализовано: findTaskById");
 }
 
 export function getPendingTasks(tasks) {
-  // TODO: вернуть новый массив невыполненных задач с помощью filter().
-  throw new Error("Не реализовано: getPendingTasks");
+  return tasks.filter((task) => task.completed === false);
 }
 
 export function getTaskTitles(tasks) {
-  // TODO: вернуть массив названий с помощью map().
-  throw new Error("Не реализовано: getTaskTitles");
+  return tasks.map((task) => task.title);
 }
 
 export function getTaskStats(tasks) {
-  // TODO: вернуть { total, completed, pending, progress }.
+  const total = tasks.length;
+  const completed = tasks.filter((task) => task.completed === true).length;
+  const pending = total - completed;
+  const progress = total > 0 ? (completed / total) * 100 : 0;
+  return { total, completed, pending, progress };
   throw new Error("Не реализовано: getTaskStats");
 }
 
 export function addTask(tasks, id, title, priority = "medium") {
-  // TODO: проверить данные через createTask(), исключить дублирование id,
-  // вернуть { ok: true, tasks: новыйМассив } без изменения исходного массива.
+  const created = createTask(id, title, priority);
+  if (!created.ok) { return created; }
+  if (tasks.some((task) => task.id === id)) {return { ok: false, error: `Задача с id=${id} уже существует` };}
+  return { ok: true, tasks: [...tasks, created.task] };
   throw new Error("Не реализовано: addTask");
 }
 
 export function setTaskCompleted(tasks, id, completed) {
-  // TODO: проверить id и completed, найти задачу, создать обновлённые данные.
+  if (completed !== true && completed !== false) {return { ok: false, error: "completed должен быть true или false" };}
+  const target = findTaskById(tasks, id);
+  if (target === undefined) {return { ok: false, error: `Задача с id=${id} не найдена` };}
+  const updatedTasks = tasks.map((task) => task.id === id ? { ...task, completed } : task);
+  return { ok: true, tasks: updatedTasks };
   throw new Error("Не реализовано: setTaskCompleted");
 }
 
 export function renameTask(tasks, id, title) {
-  // TODO: проверить id и title, изменить только название выбранной задачи.
+  const target = findTaskById(tasks, id);
+  if (target === undefined) { return { ok: false, error: `Задача с id=${id} не найдена` };}
+  const checked = createTask(id, title, target.priority);
+  if (!checked.ok) {return checked;}
+  const updatedTasks = tasks.map((task) => task.id === id ? { ...task, title: checked.task.title } : task);
+  return { ok: true, tasks: updatedTasks };
   throw new Error("Не реализовано: renameTask");
 }
 
 export function removeTask(tasks, id) {
-  // TODO: проверить id, обработать отсутствие задачи, вернуть новый массив.
+  const target = findTaskById(tasks, id);
+  if (target === undefined) {return { ok: false, error: `Задача с id=${id} не найдена` };}
+  const updatedTasks = tasks.filter((task) => task.id !== id);
+  return { ok: true, tasks: updatedTasks };
   throw new Error("Не реализовано: removeTask");
 }

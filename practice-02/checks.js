@@ -2,6 +2,7 @@
 // В этом файле нет реализации функций task-service.js.
 // Первоначально проверки не проходят: функции в заготовке ещё не реализованы.
 import assert from "node:assert/strict";
+import { demoTasks } from "./src/data.js";
 import {
   createTask, findTaskById, getPendingTasks, getTaskTitles, getTaskStats,
   addTask, setTaskCompleted, renameTask, removeTask,
@@ -349,11 +350,82 @@ check("35. Работа с другим набором, без зависимо�
 
 // Три собственных проверки можно добавить здесь, до итогового вывода,
 // либо выполнить отдельно и описать в отчёте. Общие проверки удалять не нужно.
-// Пример формы записи (не готовая проверка задания):
-// check("Собственный случай: ...", () => {
-//   const result = ...;
-//   assert.deepEqual(result, ...);
-// });
+
+check("Собственный случай 1: добавление после удаления", () => {
+  let tasks = [...demoTasks];
+  const removed = removeTask(tasks, 7);
+  assert.equal(removed.ok, true);
+  assert.equal(removed.tasks.length, 3);
+  assert.equal(removed.tasks.some((t) => t.id === 7), false);
+
+  const added = addTask(removed.tasks, 7, "Вернуть задачу", "low");
+  assert.equal(added.ok, true);
+  assert.equal(added.tasks.length, 4);
+  assert.deepEqual(added.tasks.map((t) => t.id), [1, 4, 10, 7]);
+  assert.equal(added.tasks[3].title, "Вернуть задачу");
+  assert.equal(added.tasks[3].completed, false);
+  assert.equal(added.tasks[3].priority, "low");
+  assert.deepEqual(demoTasks.map((t) => t.id), [1, 4, 7, 10]);
+});
+
+check("Собственный случай 2: изменение первой и последней задачи", () => {
+  const tasks = [
+    { id: 100, title: "Первая", completed: false, priority: "high" },
+    { id: 200, title: "Средняя", completed: false, priority: "medium" },
+    { id: 300, title: "Последняя", completed: false, priority: "low" },
+  ];
+  const step1 = setTaskCompleted(tasks, 100, true);
+  assert.equal(step1.ok, true);
+  assert.equal(step1.tasks[0].completed, true);
+  assert.equal(step1.tasks[2].completed, false);
+  const step2 = setTaskCompleted(step1.tasks, 300, true);
+  assert.equal(step2.ok, true);
+  assert.equal(step2.tasks[0].completed, true);
+  assert.equal(step2.tasks[2].completed, true);
+  assert.deepEqual(step2.tasks.map((t) => t.id), [100, 200, 300]);
+  assert.equal(step2.tasks[1].completed, false);
+  assert.equal(step2.tasks[1].priority, "medium");
+  assert.equal(step2.tasks[1].title, "Средняя");
+  assert.equal(tasks[0].completed, false);
+  assert.equal(tasks[2].completed, false);
+});
+
+check("Собственный случай 3: последовательное обновление и сводка", () => {
+  let tasks = [
+    { id: 1, title: "A", completed: false, priority: "low" },
+    { id: 2, title: "B", completed: false, priority: "medium" },
+    { id: 3, title: "C", completed: false, priority: "high" },
+  ];
+
+  let stats = getTaskStats(tasks);
+  assert.equal(stats.total, 3);
+  assert.equal(stats.completed, 0);
+  assert.equal(stats.pending, 3);
+  assert.equal(stats.progress, 0);
+
+  const step1 = setTaskCompleted(tasks, 1, true);
+  assert.equal(step1.ok, true);
+  tasks = step1.tasks;
+  stats = getTaskStats(tasks);
+  assert.equal(stats.completed, 1);
+  assert.equal(stats.pending, 2);
+
+  const step2 = setTaskCompleted(tasks, 2, true);
+  assert.equal(step2.ok, true);
+  tasks = step2.tasks;
+  stats = getTaskStats(tasks);
+  assert.equal(stats.completed, 2);
+  assert.equal(stats.pending, 1);
+
+  const step3 = setTaskCompleted(tasks, 3, true);
+  assert.equal(step3.ok, true);
+  tasks = step3.tasks;
+  stats = getTaskStats(tasks);
+  assert.equal(stats.completed, 3);
+  assert.equal(stats.pending, 0);
+  assert.equal(stats.progress, 100);
+  assert.equal(tasks.length, 3);
+});
 
 console.log(`\nПроверок пройдено: ${passed}; не пройдено: ${failed}.`);
 if (failed > 0) {

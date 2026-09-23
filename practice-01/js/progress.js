@@ -1,8 +1,7 @@
 "use strict";
 
 const totalTasks = 14;
-const completedTasks = 4;
-const dailyLimit = 4;
+const completedTasks = 14;
 const ost = totalTasks-completedTasks;
 const vipol = completedTasks / totalTasks * 100;
 
